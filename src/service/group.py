@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from loguru import logger
 import traceback
 
@@ -18,10 +18,13 @@ T = TypeVar("T", bound=HTTPClient)
 
 
 class GroupService(Generic[T]):
-    def __init__(self, http_client: type[T]) -> None:
-        self._http_client: type[T] = http_client
+    """Service for working with dog groups."""
+
+    def __init__(self, http_client: T) -> None:
+        self._http_client: T = http_client
 
     def get_groups_by_page(self, page: int = 1) -> list[GroupDataItem]:
+        """Get groups by page."""
         try:
             response: ResponseLike = self._http_client.get(
                 "groups", params={"page[number]": page}
@@ -62,7 +65,7 @@ class GroupService(Generic[T]):
             return []
 
         try:
-            data: dict | list = response.json()
+            data: dict[Any, Any] | list[Any] = response.json()
 
         except Exception as e:
             logger.error(
@@ -74,14 +77,15 @@ class GroupService(Generic[T]):
 
         dto_response: DogGroupResponse = SerializerDTO(DogGroupResponse).serialize(data)
 
-        result = dto_response.data
+        result: list[GroupDataItem] = dto_response.data or []
         if page > 1 and not result:
             logger.warning("The maximum number of group pages has been exceeded.")
             return []
 
-        return dto_response.data
+        return result
 
     def get_current_group(self, id: str) -> GroupDataItem | None:
+        """Get group by id."""
         try:
             response: ResponseLike = self._http_client.get(f"groups/{id}")
 
@@ -112,7 +116,7 @@ class GroupService(Generic[T]):
             return None
 
         try:
-            data: dict | list = response.json()
+            data: dict[Any, Any] | list[Any] = response.json()
 
         except Exception as e:
             logger.error(
@@ -126,4 +130,9 @@ class GroupService(Generic[T]):
             DogCurrentGroupResponse
         ).serialize(data)
 
-        return dto_response.data
+        result: GroupDataItem | None = dto_response.data
+        if not result:
+            logger.error(f"The group with id {id} does not exist.")
+            return None
+
+        return result

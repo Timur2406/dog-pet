@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class HTTPError(Exception):
     """
     Base class for all HTTP exceptions
@@ -11,9 +14,12 @@ class RequestError(HTTPError):
     Base class for HTTP all request exceptions
     """
 
-    def __init__(self, message: str, request_url: str, *args, **kwargs) -> None:
+    def __init__(
+        self, message: str, request_url: str, *args: Any, **kwargs: Any
+    ) -> None:
         super().__init__(message, request_url)
         self.request_url = request_url
+        self.message = message
 
 
 class HttpStatusError(RequestError):

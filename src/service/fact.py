@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from loguru import logger
 import traceback
 
@@ -18,13 +18,16 @@ T = TypeVar("T", bound=HTTPClient)
 
 
 class FactService(Generic[T]):
-    def __init__(self, http_client: type[T]) -> None:
-        self._http_client: type[T] = http_client
+    """Service for working with dog facts."""
+
+    def __init__(self, http_client: T) -> None:
+        self._http_client: T = http_client
 
     def get_facts(
         self,
         limit: int = 10,
     ) -> list[FactDataItem]:
+        """Get facts."""
         try:
             response: ResponseLike = self._http_client.get(
                 "facts", params={"limit": limit}
@@ -59,7 +62,7 @@ class FactService(Generic[T]):
             return []
 
         try:
-            data: dict | list = response.json()
+            data: dict[Any, Any] | list[Any] = response.json()
 
         except Exception as e:
             logger.error(
@@ -70,5 +73,6 @@ class FactService(Generic[T]):
             return []
 
         dto_response: DogFactResponse = SerializerDTO(DogFactResponse).serialize(data)
+        result: list[FactDataItem] = dto_response.data or []
 
-        return dto_response.data
+        return result

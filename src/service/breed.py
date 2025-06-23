@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from loguru import logger
 import traceback
 
@@ -18,8 +18,10 @@ T = TypeVar("T", bound=HTTPClient)
 
 
 class BreedService(Generic[T]):
-    def __init__(self, http_client: type[T]) -> None:
-        self._http_client: type[T] = http_client
+    """Service for working with dog breeds."""
+
+    def __init__(self, http_client: T) -> None:
+        self._http_client: T = http_client
         self._records_count: int | None = None
 
     @property
@@ -35,6 +37,7 @@ class BreedService(Generic[T]):
         return self.records_count // 10 + 1
 
     def get_breeds_by_page(self, page: int = 1) -> list[BreedDataItem]:
+        """Get breeds by page."""
         try:
             response: ResponseLike = self._http_client.get(
                 "breeds", params={"page[number]": page}
@@ -75,7 +78,7 @@ class BreedService(Generic[T]):
             return []
 
         try:
-            data: dict | list = response.json()
+            data: dict[Any, Any] | list[Any] = response.json()
 
         except Exception as e:
             logger.error(
@@ -86,6 +89,7 @@ class BreedService(Generic[T]):
             return []
 
         dto_response: DogBreedResponse = SerializerDTO(DogBreedResponse).serialize(data)
+        result: list[BreedDataItem] = dto_response.data or []
 
         self._records_count = dto_response.meta.pagination.records
         if self.records_page_count < page:
@@ -94,9 +98,10 @@ class BreedService(Generic[T]):
             )
             return []
 
-        return dto_response.data
+        return result
 
     def get_current_breed(self, id: str) -> BreedDataItem | None:
+        """Get breed by id."""
         try:
             response: ResponseLike = self._http_client.get(f"breeds/{id}")
 
@@ -127,7 +132,7 @@ class BreedService(Generic[T]):
             return None
 
         try:
-            data: dict | list = response.json()
+            data: dict[Any, Any] | list[Any] = response.json()
 
         except Exception as e:
             logger.error(
@@ -140,5 +145,6 @@ class BreedService(Generic[T]):
         dto_response: DogCurrentBreedResponse = SerializerDTO(
             DogCurrentBreedResponse
         ).serialize(data)
+        result: BreedDataItem | None = dto_response.data
 
-        return dto_response.data
+        return result

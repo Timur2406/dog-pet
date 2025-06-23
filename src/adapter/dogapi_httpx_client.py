@@ -38,7 +38,7 @@ class DogAPIHTTPXClient(HTTPClient):
     def get(
         self,
         endpoint: str,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         **kwargs: dict[str, Any],
     ) -> ResponseLike:
         """

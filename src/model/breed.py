@@ -44,11 +44,11 @@ class PaginationMeta(BaseModel):
     current: int | None = None
     next: int | None = None
     last: int | None = None
-    records: int | None = None
+    records: int
 
 
 class MetaData(BaseModel):
-    pagination: PaginationMeta | None = None
+    pagination: PaginationMeta
 
 
 # === Links Model ===
@@ -63,7 +63,7 @@ class LinksData(BaseModel):
 # === Root Model ===
 class DogBreedResponse(BaseModel):
     data: list[BreedDataItem] | None = None
-    meta: MetaData | None = None
+    meta: MetaData
     links: LinksData | None = None
 
 
