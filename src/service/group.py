@@ -4,7 +4,7 @@ import traceback
 
 from ..interface import HTTPClient, ResponseLike
 from ..shared.serializer import SerializerDTO
-from ..model.breed import DogBreedResponse, BreedDataItem, DogCurrentBreedResponse
+from ..model.group import DogGroupResponse, GroupDataItem, DogCurrentGroupResponse
 from ..exception import (
     HttpStatusError,
     NetworkError,
@@ -17,27 +17,14 @@ from ..exception import (
 T = TypeVar("T", bound=HTTPClient)
 
 
-class BreedService(Generic[T]):
+class GroupService(Generic[T]):
     def __init__(self, http_client: type[T]) -> None:
         self._http_client: type[T] = http_client
-        self._records_count: int | None = None
 
-    @property
-    def records_count(self) -> int:
-        if self._records_count is None:
-            self.get_breeds_by_page()
-        if self._records_count is None:
-            raise RuntimeError("Records count was not loaded correctly")
-        return self._records_count
-
-    @property
-    def records_page_count(self) -> int:
-        return self.records_count // 10 + 1
-
-    def get_breeds_by_page(self, page: int = 1) -> list[BreedDataItem]:
+    def get_groups_by_page(self, page: int = 1) -> list[GroupDataItem]:
         try:
             response: ResponseLike = self._http_client.get(
-                "breeds", params={"page[number]": page}
+                "groups", params={"page[number]": page}
             )
 
         except HttpStatusError as e:
@@ -47,27 +34,27 @@ class BreedService(Generic[T]):
 
             if e.status_code != 200:
                 logger.error(
-                    f"Error getting breeds by page {page}. Status code: {e.status_code}"
+                    f"Error getting groups by page {page}. Status code: {e.status_code}"
                 )
                 return []
 
         except RequestError as e:
-            logger.error(f"Error getting breeds by page {page}. {e.message}")
+            logger.error(f"Error getting groups by page {page}. {e.message}")
             return []
 
         except HTTPError as e:
             if isinstance(e, TimeoutError):
                 logger.error(
-                    f"Timeout error getting breeds by page {page}. {e.message}"
+                    f"Timeout error getting groups by page {page}. {e.message}"
                 )
 
             if isinstance(e, NetworkError):
                 logger.error(
-                    f"Network error getting breeds by page {page}. {e.message}"
+                    f"Network error getting groups by page {page}. {e.message}"
                 )
 
             else:
-                tb_str = f"Error getting breeds by page {page} " + "".join(
+                tb_str = f"Error getting groups by page {page} " + "".join(
                     traceback.format_exception(type(e), e, e.__traceback__)
                 )
                 logger.error(tb_str)
@@ -79,44 +66,42 @@ class BreedService(Generic[T]):
 
         except Exception as e:
             logger.error(
-                f"Error getting breeds by page {page}. {''.join(
+                f"Error getting groups by page {page}. {''.join(
                     traceback.format_exception(type(e), e, e.__traceback__)
                 )}"
             )
             return []
 
-        dto_response: DogBreedResponse = SerializerDTO(DogBreedResponse).serialize(data)
+        dto_response: DogGroupResponse = SerializerDTO(DogGroupResponse).serialize(data)
 
-        self._records_count = dto_response.meta.pagination.records
-        if self.records_page_count < page:
-            logger.warning(
-                f"The maximum number of breed pages has been exceeded. Max: {self.records_page_count}"
-            )
+        result = dto_response.data
+        if page > 1 and not result:
+            logger.warning("The maximum number of group pages has been exceeded.")
             return []
 
         return dto_response.data
 
-    def get_current_breed(self, id: str) -> BreedDataItem | None:
+    def get_current_group(self, id: str) -> GroupDataItem | None:
         try:
-            response: ResponseLike = self._http_client.get(f"breeds/{id}")
+            response: ResponseLike = self._http_client.get(f"groups/{id}")
 
         except HttpStatusError as e:
             if e.status_code != 200:
                 logger.error(
-                    f"Error getting breed with id {id}. Status code: {e.status_code}"
+                    f"Error getting group with id {id}. Status code: {e.status_code}"
                 )
                 return None
 
         except RequestError as e:
-            logger.error(f"Error getting breed with id {id}. {e.message}")
+            logger.error(f"Error getting group with id {id}. {e.message}")
             return None
 
         except HTTPError as e:
             if isinstance(e, TimeoutError):
-                logger.error(f"Timeout error getting breed with id {id}. {e.message}")
+                logger.error(f"Timeout error getting group with id {id}. {e.message}")
 
             if isinstance(e, NetworkError):
-                logger.error(f"Network error getting breed with id {id}. {e.message}")
+                logger.error(f"Network error getting group with id {id}. {e.message}")
 
             else:
                 tb_str = "".join(
@@ -131,14 +116,14 @@ class BreedService(Generic[T]):
 
         except Exception as e:
             logger.error(
-                f"Error getting breed with id {id}. {''.join(
+                f"Error getting group with id {id}. {''.join(
                     traceback.format_exception(type(e), e, e.__traceback__)
                 )}"
             )
             return None
 
-        dto_response: DogCurrentBreedResponse = SerializerDTO(
-            DogCurrentBreedResponse
+        dto_response: DogCurrentGroupResponse = SerializerDTO(
+            DogCurrentGroupResponse
         ).serialize(data)
 
         return dto_response.data
